@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="혜인 평택">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>HYEIN · 평택지점장 모바일 관제 시스템</title>
+
+<!-- 앱 아이콘 설정 (CATERPILLAR 테마 노란색 바퀴 모양) -->
+<link rel="apple-touch-icon" href="https://img.icons8.com/fluent/512/construction-wheel.png">
+
+<style>
+  :root{
+    --bg:#090d16;
+    --panel:#111827;
+    --panel-2:#1f2937;
+    --line:#2e3b4e;
+    --ink:#f9fafb;
+    --ink-dim:#9ca3af;
+    --ink-faint:#4b5563;
+    --cat-yellow:#ffcd00; /* 캐터필러 고유 옐로우 */
+    --good:#10b981;
+    --bad:#ef4444;
+    --font:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:var(--font)}
+  body{
+    color:var(--ink);background:var(--bg);
+    overflow-x:hidden;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:24px 16px 100px}
+  
+  /* 지점 헤더 */
+  .header{margin-bottom:20px; border-bottom:1px solid var(--line); padding-bottom:16px;}
+  .brand{font-size:12px;letter-spacing:3px;color:var(--cat-yellow);font-weight:800;text-transform:uppercase}
+  h1{font-size:22px;font-weight:900;margin:4px 0 2px;letter-spacing:-0.5px}
+  .lead{font-size:12.5px;color:var(--ink-dim)}
+  
+  /* 매출 실적 프로그레스 카드 */
+  .perf-card{background:linear-gradient(145deg, #161e2e, #111827); border:1px solid var(--line); border-radius:18px; padding:18px; margin-bottom:16px;}
+  .perf-title{font-size:14px; font-weight:700; display:flex; justify-content:space-between; margin-bottom:12px;}
+  .progress-bg{width:100%; background:var(--bg); height:12px; border-radius:10px; overflow:hidden; margin-bottom:8px;}
+  .progress-bar{height:100%; background:linear-gradient(90deg, var(--cat-yellow), #f59e0b); border-radius:10px; width:78%;} /* 78% 달성 예시 */
+  .perf-meta{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center; margin-top:14px; background:rgba(0,0,0,0.2); padding:10px; border-radius:10px;}
+  .perf-meta div span{display:block; font-size:11px; color:var(--ink-dim); margin-bottom:2px;}
+  .perf-meta div b{font-size:14px; font-weight:800;}
+
+  /* 메뉴 탭 제어 */
+  .tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:16px}
+  .tab{background:var(--panel);border:1px solid var(--line);padding:11px 4px;text-align:center;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;color:var(--ink-dim);transition:0.15s}
+  .tab.on{background:var(--panel-2);border-color:var(--cat-yellow);color:var(--cat-yellow);box-shadow:0 0 0 1px var(--cat-yellow) inset}
+  
+  .section{display:none}
+  .section.show{display:block}
+  
+  /* 카드형 리스트 배치 */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;position:relative}
+  .card h2{font-size:14px;font-weight:800;margin-bottom:12px;color:var(--ink);display:flex;align-items:center;gap:6px}
+  
+  .badge{position:absolute;top:16px;right:16px;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700}
+  .badge.alert{background:rgba(239,68,68,0.15);color:var(--bad)}
+  .badge.hold{background:rgba(245,158,11,0.15);color:var(--cat-yellow)}
+  .badge.good{background:rgba(16,185,129,0.15);color:var(--good)}
+
+  /* 피드 스타일 */
+  .feed-item{border-left:2px solid var(--line); padding-left:12px; margin-bottom:14px; position:relative;}
+  .feed-item:last-child{margin-bottom:0;}
+  .feed-time{font-size:11px; color:var(--ink-faint); margin-bottom:2px;}
+  .feed-title{font-size:13.5px; font-weight:700; color:var(--ink); margin-bottom:2px;}
+  .feed-desc{font-size:12.5px; color:var(--ink-dim); line-height:1.4;}
+
+  /* 리스트 테이블 */
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th, td{padding:10px 8px; text-align:left; border-bottom:1px solid var(--line);}
+  th{color:var(--ink-dim); font-size:11px; font-weight:600;}
+  td.num{text-align:right; font-weight:700;}
+  tr.alert-row{background:rgba(239,68,68,0.04);}
+  
+  /* 전자결재 액션 버튼 */
+  .btn-approve{background:linear-gradient(135deg, var(--cat-yellow), #f59e0b); color:#000; border:none; width:100%; padding:12px; border-radius:10px; font-size:13.5px; font-weight:800; cursor:pointer; margin-top:8px;}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <!-- 지점 상단 고정 바 -->
+  <div class="header">
+    <div class="brand">HYEIN 惠人</div>
+    <h1>평택지점장 대시보드</h1>
+    <div class="lead">종합 매출 상황 관제 · 야적장 재고 동향 · 핵심 거래처 관리 리포트</div>
+  </div>
+  
+  <!-- 1단계: 지점 매출 목표 실적 시각화 -->
+  <div class="perf-card">
+    <div class="perf-title">
+      <span>🎯 6월 지점 종합 매출 진척도</span>
+      <span style="color:var(--cat-yellow)">78.2% 달성</span>
+    </div>
+    <div class="progress-bg">
+      <div class="progress-bar"></div>
+    </div>
+    <div class="perf-meta">
+      <div><span>당월 목표</span><b>42.0억</b></div>
+      <div><span>현재 실적</span><b style="color:var(--good)">32.8억</b></div>
+      <div><span>잔여 목표</span><b style="color:var(--bad)">9.2억</b></div>
+    </div>
+  </div>
+
+  <!-- 대메뉴 3개 분할 인덱스 탭 -->
+  <div class="tabs">
+    <div class="tab on" data-target="sec-feed">실시간 브리핑</div>
+    <div class="tab" data-target="sec-stock">평택 야적장 재고</div>
+    <div class="tab" data-target="sec-appr">결재 대기 (<span style="color:var(--bad)" id="appr-cnt">2</span>)</div>
+  </div>
+
+  <!-- 섹션 1: 실시간 영업 및 고객 동향 브리핑 피드 -->
+  <div class="section show" id="sec-feed">
+    <div class="card">
+      <h2>🏢 관내 VIP 법인 핵심 동향</h2>
+      <div class="feed-item" style="border-color:var(--cat-yellow)">
+        <div class="feed-time">10분 전 · 영업 1팀</div>
+        <div class="feed-title">서해안 복선전철 제4공구 현장 법인</div>
+        <div class="feed-desc">CAT 330 굴삭기 3대 대차(Trade-In) 영업 상담 진행 중. 견적 조율 요청 접수됨.</div>
+      </div>
+      <div class="feed-item">
+        <div class="feed-time">2시간 전 · 부품팀</div>
+        <div class="feed-title">평택항 물류 기지 (주)서해로지스</div>
+        <div class="feed-desc">CAT 966 휠로더 2대분 정품 유압 실린더 키트 및 소모품 대량 발주 완료 (매출 1,850만원 확정).</div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2>🔧 정비 및 서비스 출동 현황</h2>
+      <div class="feed-item" style="border-color:var(--bad)">
+        <div class="feed-time">1시간 전 · 서비스팀</div>
+        <div class="feed-title">고덕 신도시 아파트 토목 현장</div>
+        <div class="feed-desc">CAT 320 굴삭기 엔진 경고등(E-Code 42) 발생으로 긴급 서비스 엔지니어 현장 급파 완료, 현장 수리 중.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 섹션 2: 평택 야적장 실시간 장비 재고 리스트 -->
+  <div class="section" id="sec-stock">
+    <div class="card">
+      <h2>📦 기종별 야적장 재고 현황</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>기종/모델</th>
+            <th>구분</th>
+            <th class="num">신차</th>
+            <th class="num">인증중고</th>
+            <th class="num">장기재고</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>CAT 320</b> (20톤급)</td>
+            <td>굴삭기</td>
+            <td class="num" style="color:var(--good)">5대</td>
+            <td class="num">2대</td>
+            <td class="num" style="color:var(--ink-faint)">0</td>
+          </tr>
+          <tr>
+            <td><b>CAT 330</b> (30톤급)</td>
+            <td>굴삭기</td>
+            <td class="num" style="color:var(--good)">3대</td>
+            <td class="num">1대</td>
+            <td class="num" style="color:var(--bad)">1대</td>
+          </tr>
+          <tr>
+            <td><b>CAT 950M</b></td>
+            <td>휠로더</td>
+            <td class="num" style="color:var(--good)">2대</td>
+            <td class="num" style="color:var(--ink-faint)">0</td>
+            <td class="num" style="color:var(--ink-faint)">0</td>
+          </tr>
+          <tr class="alert-row">
+            <td><b>CAT 303.5</b> (미니)</td>
+            <td>굴삭기</td>
+            <td class="num" style="color:var(--good)">8대</td>
+            <td class="num">4대</td>
+            <td class="num" style="color:var(--bad)">2대</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 섹션 3: 지점장 전용 모바일 특수 결재 승인창 -->
+  <div class="section" id="sec-appr">
+    <div class="card" id="appr-1">
+      <span class="badge alert">결재 대기</span>
+      <h2>📄 [영업 승인] 신차 특별 할인율 요청 건</h2>
+      <div style="font-size:13px; color:var(--ink-dim); margin:8px 0; line-height:1.5;">
+        • <b>신청 부서</b>: 영업 2팀 최승우 과장<br>
+        • <b>대상 고객</b>: (주)평택토건 (CAT 336 대형 1대)<br>
+        • <b>요청 내용</b>: 법인 대량 구매 특수 가이드 적용, 본사 기본 할인 외 지점장 재량 <b>추가 2.5% 특별 할인</b> 승인 요청.
+      </div>
+      <button class="btn-approve" onclick="approveAction('appr-1')">전자결재 즉시 승인</button>
+    </div>
+
+    <div class="card" id="appr-2">
+      <span class="badge hold">결재 대기</span>
+      <h2>📄 [부품 외상] 긴급 정비 부품 한도초과 여신 요청</h2>
+      <div style="font-size:13px; color:var(--ink-dim); margin:8px 0; line-height:1.5;">
+        • <b>신청 부서</b>: 부품정산팀<br>
+        • <b>대상 고객</b>: 대성개발(주) (장기 거래처)<br>
+        • <b>요청 내용</b>: 현재 외상 한도(3,000만원) 초과 상태이나, 메인 펌프 소생 정비를 위해 <b>긴급 부품 1,200만원 분 선출고</b> 및 외상 한도 임시 상향 승인 요청.
+      </div>
+      <button class="btn-approve" onclick="approveAction('appr-2')">전자결재 즉시 승인</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// 탭 전환 코어 인터페이스 인터랙션
+document.querySelectorAll('.tabs .tab').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tabs .tab').forEach(b => b.classList.remove('on'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('show'));
+    btn.classList.add('on');
+    document.getElementById(btn.dataset.target).classList.add('show');
+  };
+});
+
+// 현장 전자결재 승인 시 처리 프로세스 모의 엔진
+let remainingAppr = 2;
+function approveAction(elementId) {
+  if(confirm("해당 건의 특수 조건 및 리스크를 확인했으며, 최종 결재 승인 처리할까요?")) {
+    const targetCard = document.getElementById(elementId);
+    targetCard.style.transition = "0.3s";
+    targetCard.style.opacity = "0.3";
+    targetCard.style.transform = "scale(0.95)";
+    
+    setTimeout(() => {
+      targetCard.remove();
+      remainingAppr--;
+      document.getElementById('appr-cnt').textContent = remainingAppr;
+      if(remainingAppr === 0) {
+        document.getElementById('sec-appr').innerHTML = '<div class="card" style="text-align:center; padding:40px; color:var(--good);"><b>✓ 미결재 문서가 없으며, 모든 전결 처리가 완료되었습니다.</b></div>';
+      }
+    }, 300);
+  }
+}
+</script>
+</body>
+</html>
